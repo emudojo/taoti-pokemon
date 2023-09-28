@@ -25,9 +25,6 @@
         "drupal/core-recommended": "^10.1",
         "drupal/features": "^3.13",
         "drupal/image_url_formatter": "^1.1",
-        "drupal/migrate_source_graphql": "^2.0",
-        "drupal/thex": "^10.0",
-        "drupal/xara": "^10.1",
         "drush/drush": "^12.2"
     },
     "conflict": {
