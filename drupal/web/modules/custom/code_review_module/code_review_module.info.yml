@@ -1,7 +1,7 @@
 name: 'Code Review Module'
 type: module
 description: 'This is just to encompass changes to the base theme and custom functionality needed for this demo'
-package: Taoi
+package: Taoti
 core_version_requirement: '^9.4 || ^10'
 dependencies:
   - 'address:address'
@@ -30,4 +30,5 @@ dependencies:
   - 'entity_reference_revisions:entity_reference_revisions'
   - 'inline_entity_form:inline_entity_form'
   - 'state_machine:state_machine'
+  - 'migrate_source_graphql:migrate_source_graphql'
 version: 8.x-1.0

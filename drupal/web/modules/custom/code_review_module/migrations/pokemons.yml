@@ -1,4 +1,4 @@
-id: migrate_pokemons_3
+id: migrate_pokemons
 label: 'Migrate posts from PokeAPI using Drupal'
 source:
   plugin: graphql
