@@ -1,0 +1,60 @@
+id: migrate_pokemons_3
+label: 'Migrate posts from PokeAPI using Drupal'
+source:
+  plugin: graphql
+  endpoint: 'https://beta.pokeapi.co/graphql/v1beta'
+  data_key: pokemon
+  query:
+    pokemon_v2_pokemonspecies:
+      alias: pokemon
+      arguments:
+        where:
+          pokemon_v2_generation:
+            name:
+              _eq: "generation-i"
+      fields:
+        - id
+        - name
+        - is_baby
+        - is_legendary
+        - is_mythical
+        - pokemon_v2_pokemonspeciesflavortexts:
+            alias: extra
+            arguments:
+              where:
+                pokemon_v2_version:
+                  name:
+                    _eq: "red"
+                pokemon_v2_language:
+                  name:
+                    _eq: "en"
+            fields:
+              - flavor_text
+
+
+  ids:
+    id:
+      type: string
+
+
+process:
+  title: name
+  field_url:
+    plugin: get_pokemon_sprite
+    source: name
+    type: front_default
+  body/value:
+    plugin: concat_extra_flavor
+    source: extra/0
+  body/format:
+    plugin: default_value
+    default_value: full_html
+  uid:
+    plugin: default_value
+    default_value: 1
+
+destination:
+  plugin: 'entity:node'
+  default_bundle: pokemon
+
+migration_dependencies: { }

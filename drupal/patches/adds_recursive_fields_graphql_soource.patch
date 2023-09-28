@@ -1,0 +1,556 @@
+diff --git a/README.md b/README.md
+deleted file mode 100644
+index d123f64..0000000
+--- a/README.md
++++ /dev/null
+@@ -1,202 +0,0 @@
+-This module extends the list of core migrations source by adding the new **GraphQL** query source.
+-
+-What's means?
+--------------
+-
+-This means that like as _[Migrate Source CSV](https://www.drupal.org/project/migrate_source_csv)_, for example, you can create a migration YAML file inside of which configure the GraphQL endpoint and write the query from which to extract the contents.
+-
+-How it works?
+--------------
+-### Source options
+-The **graphql** _source_ offers a number of options to allow you to best configure your query. In short:
+-```
+-source:
+-  plugin: graphql
+-
+-  # [mandatory] The GraphQL endpoint
+-  endpoint: <value>
+-  # [optional] Basic, Bearer, Digest, etc...
+-  auth_scheme: <value>
+-  # [optional] Pared with auth_scheme will generate the string that
+-  # will be passed to the Authorization header
+-  auth_parameter: <value>
+-  # [optional] Used to specify a different name for "data" property
+-  data_key: <value>
+-  # [mandatory] from here starts the query definition
+-  query:
+-    # [mandatory] The query name
+-    <query_name>:
+-      # [optional] Query arguments (filtering, pagination, and so on...).
+-      # See the example below.
+-      arguments:
+-      # [mandatory] Query fields definition
+-      fields:
+-        # [mandatory] It is 'data' if no different value has been set in data_key
+-        - <data|data_key>:
+-            - <field_1>
+-            - <field_2>
+-            - <field_n>
+-```
+-
+-### Let's take an example.
+-
+-For this example we will use the [GraphQLZero](https://graphqlzero.almansi.me/ "Fake Online GraphQL API for Testing and Prototyping") (Fake Online GraphQL API for Testing and Prototyping) from which we will migrate some entities, that on GraphQLZero are called **posts**, into the our Drupal instance populating the our's default articles. Follow GraphQL query shows how to get a list of posts from GraphQLZero:
+-
+-```
+-query {
+-  posts {
+-    data {
+-      id
+-      title
+-      body
+-    }
+-  }
+-}
+-```
+-
+-**The response:**
+-```
+-{
+-  "data": {
+-    "posts": {
+-      "data": [
+-        {
+-          "id": "1",
+-          "title": "sunt aut facere repellat",
+-          "body": "quia et suscipit\nsuscipit ..."
+-        },
+-        ...
+-        {
+-          "id": "3",
+-          "title": "ea molestias",
+-          "body": "et iusto sed quo iure\nvoluptatem ..."
+-        },
+-      }
+-    }
+-```
+-
+-
+-The migration
+--------------
+-
+-So we, as first thing, have to setup the YAML migration file. As like as follow:
+-```
+-id: migrate_graphql_posts_articles
+-label: 'Migrate posts from GraphQLZero'
+-migration_tags: null
+-source:
+-  plugin: graphql
+-  endpoint: 'https://graphqlzero.almansi.me/api'
+-  auth_scheme: Bearer
+-  auth_parameter: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+-  query:
+-    posts:
+-      arguments:
+-        options:
+-          paginate:
+-            page: 1
+-            limit: 10
+-      fields:
+-        -
+-          data:
+-            - id
+-            - title
+-            - body
+-  ids:
+-    id:
+-      type: string
+-process:
+-  title: title
+-  body: body
+-
+-destination:
+-  plugin: 'entity:node'
+-  default_bundle: article
+-
+-migration_dependencies: {  }
+-```
+-The only difference between the GraphQL query and the YAML transposition is the mandatory property **fields**, the usefulness of which is solely a matter of choice for the developer.
+-
+-
+-### From 2.0.0 version
+-
+-Starting from module's stable version (2.0.0) there Is the possibility to specify a different name for "data" property, using the **data\_key** configuration parameter inside the migration YAML file. If no value was specified the default "data" one will be used as default. For example, if the our data structure returns a response like as follow:
+-
+-```
+-query {
+-  posts {
+-    anotherBrickInTheWall {
+-      id
+-      title
+-      body
+-    }
+-  }
+-}
+-```
+-
+-We can change the way as the module access to the posts data specifing the different data\_key value like as follow:
+-```
+-id: migrate_graphql_posts_articles
+-...
+-source:
+-  plugin: graphql
+-  data_key: anotherBrickInTheWall
+-  ...
+-  query:
+-    posts:
+-      fields:
+-        -
+-          anotherBrickInTheWall:
+-            - id
+-            - title
+-            - body
+-...
+-```
+-Additionaly it's possible to specify different authorization schemes using the **auth\_scheme** (Basic, Bearer, Digest, etc...) and **auth\_parameters** options. Simply pairing the auth\_scheme and auth\_parameters value, will generate the string that will be passed to the _Authorization_ header.
+-
+-It's also possible to specify the **query arguments** using the `arguments` key under query's name (in our example _post_), look at the following example.
+-
+-We need to get the paginated posts, e.g. the first ten posts from the first page; which in GraphQL will be:
+-```
+-query {
+-  posts(options:{
+-      paginate: {
+-        page:1,
+-        limit:10
+-      }
+-    }) {
+-    anotherBrickInTheWall {
+-      id
+-      title
+-      body
+-    }
+-  }
+-}
+-```
+-To do this with our GraphQL source plugin, we modify the migration by adding the "**arguments**" parameter as follows:
+-```
+-id: migrate_graphql_posts_articles
+-...
+-source:
+-  plugin: graphql
+-  data_key: anotherBrickInTheWall
+-  ...
+-  query:
+-    posts:
+-      arguments:
+-        options:
+-          paginate:
+-            page: 1
+-            limit: 10
+-      fields:
+-        -
+-          anotherBrickInTheWall:
+-            - id
+-            - title
+-            - body
+-...
+-```
+-
+-
+-Now that we have created (and imported) the new migration, named migrate\_plus.migration.migrate\_graphql\_posts\_articles.yml, we must execute the _migration-import_ command: \
+-`drush mim migrate_graphql_posts_articles` .
+diff --git a/composer.json b/composer.json
+deleted file mode 100644
+index 4a9fe46..0000000
+--- a/composer.json
++++ /dev/null
+@@ -1,21 +0,0 @@
+-{
+-    "name": "drupal/migrate_source_graphql",
+-    "description": "GraphQL source migration module",
+-    "type": "drupal-module",
+-    "license": "GPL-2.0-or-later",
+-    "authors": [
+-        {
+-            "name": "Nino Marrazzo (reinchek)",
+-            "homepage": "https://www.drupal.org/u/reinchek",
+-            "role": "Maintainer"
+-        }
+-    ],
+-    "homepage": "https://drupal.org/project/migrate_source_graphql",
+-    "support": {
+-        "issues": "https://drupal.org/project/issues/migrate_source_graphql",
+-        "source": "https://git.drupalcode.org/project/migrate_source_graphql"
+-    },
+-    "require": {
+-        "gmostafa/php-graphql-client": "1.8"
+-    }
+-}
+diff --git a/migrate_source_graphql.info.yml b/migrate_source_graphql.info.yml
+deleted file mode 100644
+index ad38880..0000000
+--- a/migrate_source_graphql.info.yml
++++ /dev/null
+@@ -1,8 +0,0 @@
+-type: module
+-name: Migrate Source GraphQL
+-description: 'GraphQL source migration.'
+-package: Migration
+-core: 8.x
+-core_version_requirement: ^8 || ^9
+-dependencies:
+-  - drupal:migrate
+diff --git a/migrate_source_graphql.module b/migrate_source_graphql.module
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/migrate_source_graphql.services.yml b/migrate_source_graphql.services.yml
+deleted file mode 100644
+index f5c33e1..0000000
+--- a/migrate_source_graphql.services.yml
++++ /dev/null
+@@ -1,3 +0,0 @@
+-services:
+-  migrate_source_graphql.graphql.client:
+-    class: Drupal\migrate_source_graphql\GraphQL\Client
+diff --git a/src/GraphQL/Client.php b/src/GraphQL/Client.php
+deleted file mode 100644
+index d51a9c6..0000000
+--- a/src/GraphQL/Client.php
++++ /dev/null
+@@ -1,117 +0,0 @@
+-<?php
+-
+-namespace Drupal\migrate_source_graphql\GraphQL;
+-
+-use GraphQL\Client as GraphQLClient;
+-use GraphQL\Query;
+-use GraphQL\RawObject;
+-use GraphQL\QueryBuilder\QueryBuilderInterface;
+-
+-/**
+- * Class Client that implements some useful methods to interact with GraphQL.
+- */
+-class Client {
+-
+-  /**
+-   * The client.
+-   *
+-   * @var \GraphQL\Client
+-   */
+-  protected $client;
+-
+-  /**
+-   * The query builder.
+-   *
+-   * @var \GraphQL\QueryBuilder
+-   */
+-  private $queryBuilder;
+-
+-  /**
+-   * Client constructor.
+-   *
+-   * @param string $apiEndpoint
+-   *   API Endpoint.
+-   * @param array $extraHeader
+-   *   Extra headers.
+-   *
+-   * @return \GraphQL\Client
+-   */
+-  public function __construct(string $apiEndpoint, array $extraHeader) {
+-    $this->client = new GraphQLClient(
+-      $apiEndpoint,
+-      $extraHeader
+-    );
+-
+-    return $this->client;
+-  }
+-
+-  /**
+-   * Build the query.
+-   *
+-   * @param string $queryName
+-   *   The query's name.
+-   * @param array $selectionSet
+-   *   Stores the selection set desired to get from the query.
+-   * @param mixed|null $arguments
+-   *   Query arguments.
+-   * @param mixed|null $filters
+-   *   Query filters.
+-   *
+-   * @return \GraphQL\Query
+-   *   The created query.
+-   */
+-  public function buildQuery(string $queryName, array $selectionSet, mixed $arguments = NULL, mixed $filters = NULL) {
+-    $this->arrayToQuery($selectionSet);
+-
+-    $query = (new Query($queryName))
+-      ->setSelectionSet($selectionSet);
+-
+-    if ($arguments !== NULL) {
+-      $argumentsKey = array_key_first($arguments);
+-      $argumentsToString = json_encode($arguments[$argumentsKey]);
+-      $argumentsToString = preg_replace("/['\"]/", '', $argumentsToString);
+-
+-      $arguments = [
+-        $argumentsKey => new RawObject($argumentsToString),
+-      ];
+-
+-      if ($filters !== NULL) {
+-        $arguments['filters'] = $filters;
+-      }
+-
+-      $query->setArguments($arguments);
+-    }
+-
+-    return $query;
+-  }
+-
+-  /**
+-   * Run query.
+-   *
+-   * @param Query $query
+-   *   Created query to use.
+-   * @return \GraphQL\Results
+-   */
+-  public function runQuery(\GraphQL\Query $query) {
+-    return $this->client->runQuery($query);
+-  }
+-
+-  /**
+-   * Recursive array to Query object transform to build a right selectionSet.
+-   *
+-   * @param array $array
+-   *   Recursive array to Query transform to build a right selectionSet.
+-   */
+-  private function arrayToQuery(array &$array) {
+-    foreach ($array as &$item) {
+-      if (is_array($item)) {
+-        $itemKey = array_key_first($item);
+-        if (is_array($item[$itemKey])) {
+-          $this->arrayToQuery($item[$itemKey]);
+-        }
+-        $item = (new Query($itemKey))->setSelectionSet($item[$itemKey]);
+-      }
+-    }
+-  }
+-
+-}
+diff --git a/src/Plugin/migrate/source/GraphQL.php b/src/Plugin/migrate/source/GraphQL.php
+deleted file mode 100644
+index 3139216..0000000
+--- a/src/Plugin/migrate/source/GraphQL.php
++++ /dev/null
+@@ -1,166 +0,0 @@
+-<?php
+-
+-namespace Drupal\migrate_source_graphql\Plugin\migrate\source;
+-
+-use Drupal\Component\Plugin\ConfigurableInterface;
+-use Drupal\migrate\Plugin\migrate\source\SourcePluginBase;
+-use Drupal\migrate\Plugin\MigrationInterface;
+-use Drupal\Component\Utility\NestedArray;
+-use Drupal\migrate_source_graphql\GraphQL\Client;
+-
+-/**
+- * Class GraphQL migrate source.
+- *
+- * @MigrateSource(
+- *   id = "graphql",
+- *   source_module = "migrate_source_graphql"
+- * )
+- */
+-class GraphQL extends SourcePluginBase implements ConfigurableInterface {
+-  /**
+-   * The graphql client.
+-   *
+-   * @var \GraphQL\Client
+-   */
+-  protected $client;
+-
+-  /**
+-   * {@inheritdoc}
+-   *
+-   * @throws \InvalidArgumentException
+-   * @throws \Drupal\migrate\MigrateException
+-   */
+-  public function __construct(array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration) {
+-    $configuration['data_key'] = isset($configuration['data_key']) ? $configuration['data_key'] : 'data';
+-
+-    parent::__construct($configuration, $plugin_id, $plugin_definition, $migration);
+-    // Endpoint is required.
+-    if (empty($this->configuration['endpoint'])) {
+-      throw new \InvalidArgumentException('You must declare the "endpoint" to the GraphQL API service in your settings.');
+-    }
+-
+-    // Queries are required.
+-    if (empty($this->configuration['query'])) {
+-      throw new \InvalidArgumentException('You must declare the "query" parameter in your settings to get expected data from GraphQL API service.');
+-    }
+-    else {
+-      $headers = [];
+-      if (isset($this->configuration['auth_scheme']) && !empty($this->configuration['auth_scheme'])) {
+-        $headers['Authorization'] = $this->configuration['auth_scheme'] . ' ' . ($this->configuration['auth_parameters'] ?? '');
+-      }
+-      $this->client = new Client($this->configuration['endpoint'], $headers);
+-      $this->fields();
+-    }
+-  }
+-
+-  /**
+-   * {@inheritdoc}
+-   */
+-  public function defaultConfiguration() {
+-    return [
+-      'endpoint' => 'localhost',
+-    ];
+-  }
+-
+-  /**
+-   * {@inheritdoc}
+-   */
+-  public function getConfiguration() {
+-    return $this->configuration;
+-  }
+-
+-  /**
+-   * {@inheritdoc}
+-   */
+-  public function setConfiguration(array $configuration) {
+-    // We must preserve integer keys for column_name mapping.
+-    $this->configuration = NestedArray::mergeDeepArray([
+-      $this->defaultConfiguration(),
+-      $configuration,
+-    ], TRUE);
+-  }
+-
+-  /**
+-   * Return a string representing the GraphQL API endpoint.
+-   *
+-   * @return string
+-   *   The GraphQL API endpoint.
+-   */
+-  public function __toString() {
+-    return $this->configuration['endpoint'];
+-  }
+-
+-  /**
+-   * {@inheritdoc}
+-   *
+-   * @throws \Drupal\migrate\MigrateException
+-   */
+-  public function initializeIterator() {
+-    return $this->getGenerator();
+-  }
+-
+-  /**
+-   * Return the generator using yield.
+-   */
+-  private function getGenerator() {
+-    $query = $this->configuration['query'];
+-    $queryName = array_key_first($query);
+-    $query = $this->buildQuery($queryName, $query[$queryName]);
+-    $results  = $this->client->runQuery($query);
+-    $results  = $results->getData();
+-    $property = $this->configuration['data_key'];
+-    $results = $results->$queryName->$property ?? $results->$queryName ?? [];
+-    foreach ($results as $result) {
+-      yield json_decode(json_encode($result), TRUE);
+-      ;
+-    }
+-  }
+-
+-  /**
+-   * Build the query.
+-   *
+-   * @param string $queryName
+-   *   Query name.
+-   * @param array $query
+-   *   The query.
+-   *
+-   * @return \GraphQL\Query
+-   *   Built query.
+-   */
+-  private function buildQuery(string $queryName, array $query) {
+-    $arguments = isset($query['arguments']) ? $query['arguments'] : NULL;
+-    return $this->client->buildQuery($queryName, $query['fields'], $arguments);
+-  }
+-
+-  /**
+-   * {@inheritdoc}
+-   */
+-  public function getIds() {
+-    $ids['id']['type'] = 'string';
+-    return $ids;
+-  }
+-
+-  /**
+-   * {@inheritdoc}
+-   */
+-  public function fields() {
+-    $fields = [];
+-    $query = $this->configuration['query'];
+-    foreach ($query as $queryName => $query) {
+-      $results = is_array($query['fields'][0]) ? array_keys($query['fields'][0]) : $query['fields'];
+-      foreach ($results as $resultKey) {
+-        if (isset($query['fields'][0][$resultKey])) {
+-          foreach ($query['fields'][0][$resultKey] as $field) {
+-            if (!is_array($field)) {
+-              $fields[$field] = $field;
+-            }
+-          }
+-        }
+-        else {
+-          $fields[$resultKey] = $resultKey;
+-        }
+-      }
+-    }
+-    return $fields;
+-  }
+-}

@@ -1,0 +1,25 @@
+<?php
+
+/**
+ * @file
+ * Primary module hooks for Code Review Module module.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function code_review_module_entity_presave(EntityInterface $entity): void
+{
+  // check if entity if of type pokemon
+  if ($entity->bundle() === 'pokemon') {
+    $body_val = $entity->get('body')->value;
+    if (is_array($body_val)) {
+      $body_val = implode('', $body_val);
+    } else {
+      $body_val = (string)$body_val;
+    }
+    $entity->set('body', html_entity_decode($body_val));
+  }
+}
