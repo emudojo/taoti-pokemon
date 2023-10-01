@@ -38,7 +38,7 @@ final class GetPokemonSprite extends ProcessPluginBase
     $response = Drupal::httpClient()->get($url);
     if ($response->getStatusCode() == Response::HTTP_OK) {
       $response = json_decode($response->getBody()->getContents(), TRUE);
-      return $response['sprites'][$config_type];
+      return $response['sprites']['other']['dream_world'][$config_type];
     }
     return '';
   }
